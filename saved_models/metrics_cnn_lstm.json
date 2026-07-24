@@ -1,0 +1,11 @@
+{
+  "model_type": "cnn_lstm",
+  "test_accuracy": 0.4375,
+  "test_loss": 1.9615064859390259,
+  "train_samples": 1152,
+  "val_samples": 144,
+  "test_samples": 144,
+  "epochs_trained": 26,
+  "best_val_accuracy": 0.4791666567325592,
+  "best_val_loss": 1.9455426931381226
+}
