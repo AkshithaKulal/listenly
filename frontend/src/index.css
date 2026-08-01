@@ -100,6 +100,23 @@ a {
   font-weight: 500;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav-links a {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.nav-links a:hover {
+  color: var(--ink);
+}
+
 .hero {
   position: relative;
   min-height: min(92vh, 900px);

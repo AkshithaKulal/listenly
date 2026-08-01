@@ -327,163 +327,6 @@ function ResultPanel({ result, loading }) {
   )
 }
 
-function InsightsSection({ insights, lightbox, setLightbox }) {
-  const metrics = insights?.metrics
-  const charts = insights?.charts || []
-  const classes = insights?.classes || []
-
-  return (
-    <section className="section" id="insights">
-      <div className="section-head">
-        <h2>Model insights</h2>
-        <p>
-          Training curves, confusion matrix, and per-class scores from the CNN + LSTM model on
-          RAVDESS.
-        </p>
-      </div>
-
-      <div className="metrics">
-        <div className="metric">
-          <span className="k">Test accuracy</span>
-          <span className="v">
-            {metrics ? `${(metrics.test_accuracy * 100).toFixed(1)}%` : '—'}
-          </span>
-        </div>
-        <div className="metric">
-          <span className="k">Best validation</span>
-          <span className="v">
-            {metrics ? `${(metrics.best_val_accuracy * 100).toFixed(1)}%` : '—'}
-          </span>
-        </div>
-        <div className="metric">
-          <span className="k">Test loss</span>
-          <span className="v">{metrics ? metrics.test_loss.toFixed(2) : '—'}</span>
-        </div>
-        <div className="metric">
-          <span className="k">Epochs trained</span>
-          <span className="v">{metrics?.epochs_trained ?? '—'}</span>
-        </div>
-      </div>
-
-      {charts.length > 0 && (
-        <div className="insights-block">
-          <h3>Training graphs</h3>
-          <p>Click any chart to expand. These are saved from the last training run.</p>
-          <div className="chart-grid">
-            {charts.map((chart) => (
-              <figure
-                key={chart.id}
-                className={`chart-card ${chart.id.includes('training_history') ? 'wide' : ''}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => setLightbox(chart)}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: 0,
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'zoom-in',
-                  }}
-                >
-                  <img src={apiUrl(chart.url)} alt={chart.title} loading="lazy" />
-                </button>
-                <figcaption>
-                  <strong>{chart.title}</strong>
-                  <span>{chart.caption}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {classes.length > 0 && (
-        <div className="insights-block">
-          <h3>Per-class performance</h3>
-          <p>Precision, recall, and F1 for each emotion on the held-out test set.</p>
-          <div className="class-table-wrap">
-            <table className="class-table">
-              <thead>
-                <tr>
-                  <th>Emotion</th>
-                  <th>Precision</th>
-                  <th>Recall</th>
-                  <th>F1-score</th>
-                  <th>Support</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classes.map((row) => (
-                  <tr key={row.emotion}>
-                    <td>
-                      <span className="emotion-pill">
-                        <span className="emotion-dot" style={{ background: row.color }} />
-                        {row.emotion}
-                      </span>
-                    </td>
-                    <td>{(row.precision * 100).toFixed(1)}%</td>
-                    <td>{(row.recall * 100).toFixed(1)}%</td>
-                    <td>
-                      <div className="f1-cell">
-                        <span>{(row.f1 * 100).toFixed(1)}%</span>
-                        <div className="mini-meter">
-                          <span style={{ width: `${row.f1 * 100}%`, background: row.color }} />
-                        </div>
-                      </div>
-                    </td>
-                    <td>{row.support}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {metrics && (
-        <div className="insights-block">
-          <h3>Dataset split</h3>
-          <p>How samples were divided for training, validation, and testing.</p>
-          <div className="metrics">
-            <div className="metric">
-              <span className="k">Train samples</span>
-              <span className="v">{metrics.train_samples}</span>
-            </div>
-            <div className="metric">
-              <span className="k">Validation</span>
-              <span className="v">{metrics.val_samples}</span>
-            </div>
-            <div className="metric">
-              <span className="k">Test</span>
-              <span className="v">{metrics.test_samples}</span>
-            </div>
-            <div className="metric">
-              <span className="k">Architecture</span>
-              <span className="v" style={{ fontSize: '1.15rem' }}>
-                {metrics.model_type?.replace('_', '+') || 'cnn+lstm'}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {lightbox && (
-        <div
-          className="lightbox"
-          role="dialog"
-          aria-label={lightbox.title}
-          onClick={() => setLightbox(null)}
-          onKeyDown={(e) => e.key === 'Escape' && setLightbox(null)}
-        >
-          <img src={apiUrl(lightbox.url)} alt={lightbox.title} />
-        </div>
-      )}
-    </section>
-  )
-}
-
 export default function App() {
   const [file, setFile] = useState(null)
   const [dragOver, setDragOver] = useState(false)
@@ -491,8 +334,6 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [health, setHealth] = useState(null)
-  const [insights, setInsights] = useState(null)
-  const [lightbox, setLightbox] = useState(null)
   const [recording, setRecording] = useState(false)
   const mediaRef = useRef(null)
   const chunksRef = useRef([])
@@ -503,20 +344,7 @@ export default function App() {
       .then((r) => r.json())
       .then(setHealth)
       .catch(() => setHealth({ status: 'down', model_ready: false }))
-    fetch(apiUrl('/api/insights'))
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setInsights)
-      .catch(() => setInsights(null))
   }, [])
-
-  useEffect(() => {
-    if (!lightbox) return undefined
-    const onKey = (e) => {
-      if (e.key === 'Escape') setLightbox(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [lightbox])
 
   const onFiles = useCallback((list) => {
     const f = list?.[0]
@@ -584,9 +412,13 @@ export default function App() {
           <BrandMark />
           <span className="brand-name">Listenly</span>
         </a>
-        <div className="nav-meta">
-          <span className={`pulse ${health?.model_ready ? '' : 'off'}`} />
-          {health?.model_ready ? 'Model ready' : 'Model offline'}
+        <div className="nav-links">
+          <a href="#top">Home</a>
+          <a href="#analyze">Analyze</a>
+          <span className="nav-meta">
+            <span className={`pulse ${health?.model_ready ? '' : 'off'}`} />
+            {health?.model_ready ? 'Model ready' : 'Model offline'}
+          </span>
         </div>
       </nav>
 
@@ -608,8 +440,8 @@ export default function App() {
               <a className="btn btn-primary" href="#analyze">
                 Analyze speech
               </a>
-              <a className="btn btn-ghost" href="#insights">
-                See model insights
+              <a className="btn btn-ghost" href="#analyze">
+                Upload or record
               </a>
             </div>
             <div className="hero-steps">
@@ -670,9 +502,7 @@ export default function App() {
                     </button>
                   </div>
                   <MiniWave file={file} />
-                  {file.type.startsWith('audio') && (
-                    <AudioPreview file={file} />
-                  )}
+                  {file.type.startsWith('audio') && <AudioPreview file={file} />}
                 </>
               )}
             </div>
@@ -704,15 +534,17 @@ export default function App() {
           </div>
 
           <AnimatePresence mode="wait">
-            <ResultPanel key={result?.emotion || (loading ? 'load' : 'empty')} result={result} loading={loading} />
+            <ResultPanel
+              key={result?.emotion || (loading ? 'load' : 'empty')}
+              result={result}
+              loading={loading}
+            />
           </AnimatePresence>
         </div>
       </section>
 
-      <InsightsSection insights={insights} lightbox={lightbox} setLightbox={setLightbox} />
-
       <footer className="footer">
-        Listenly · Speech Emotion Recognition · CNN+LSTM · Local model inference
+        Listenly · Home & Analyze · CNN+LSTM speech emotion recognition
       </footer>
     </div>
   )
