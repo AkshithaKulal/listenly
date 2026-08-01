@@ -97,17 +97,57 @@ class EmotionPredictor:
                 audio, sr,
                 n_mfcc=config.N_MFCC,
                 hop_length=config.HOP_LENGTH,
-                n_fft=config.N_FFT
+                n_fft=config.N_FFT,
+                use_deltas=getattr(config, "USE_MFCC_DELTAS", True),
             )
         else:  # lstm
             features = extract_features_for_lstm(
                 audio, sr,
                 n_mfcc=config.N_MFCC,
                 hop_length=config.HOP_LENGTH,
-                n_fft=config.N_FFT
+                n_fft=config.N_FFT,
+                use_deltas=getattr(config, "USE_MFCC_DELTAS", True),
             )
-        
-        # Add batch dimension
+
+        # Match training time length + normalization
+        norm_path = os.path.join(config.SAVED_MODELS_DIR, f"feature_norm_{self.model_type}.npz")
+        if os.path.exists(norm_path):
+            stats = np.load(norm_path, allow_pickle=True)
+            if "input_shape" in stats.files:
+                target_shape = tuple(int(x) for x in stats["input_shape"])
+                if self.model_type in ("cnn", "cnn_lstm"):
+                    target_time = target_shape[1]
+                    cur = features.shape[1]
+                    if cur < target_time:
+                        pad = np.zeros(
+                            (features.shape[0], target_time - cur, features.shape[2]),
+                            dtype=np.float32,
+                        )
+                        features = np.concatenate([features, pad], axis=1)
+                    else:
+                        features = features[:, :target_time, :]
+                else:
+                    target_time = target_shape[0]
+                    cur = features.shape[0]
+                    if cur < target_time:
+                        pad = np.zeros(
+                            (target_time - cur, features.shape[1]),
+                            dtype=np.float32,
+                        )
+                        features = np.concatenate([features, pad], axis=0)
+                    else:
+                        features = features[:target_time, :]
+
+            mean = stats["mean"]
+            std = stats["std"]
+            if mean.ndim == 4:
+                mean = mean.squeeze(axis=0)
+                std = std.squeeze(axis=0)
+            elif mean.ndim == 3 and self.model_type == "lstm":
+                mean = mean.squeeze(axis=0)
+                std = std.squeeze(axis=0)
+            features = (features - mean) / std
+
         features = np.expand_dims(features, axis=0)
         return features
     

@@ -182,40 +182,40 @@ def preprocess_audio(audio_path, sr=22050, duration=3.0, top_db=30, apply_noise_
         raise
 
 
-def augment_audio(audio, sr):
+def augment_audio(audio, sr, factor=3):
     """
     Apply data augmentation to audio (time stretch, pitch shift, noise).
-    
+
     Args:
         audio (np.array): Audio time series
         sr (int): Sample rate
-    
+        factor (int): How many augmented variants to add (besides original)
+
     Returns:
-        list: List of augmented audio samples
+        list: [original, ...augmented]
     """
-    augmented = []
-    
+    augmented = [audio]
+    variants = []
+
     try:
-        # Original
-        augmented.append(audio)
-        
-        # Time stretch
-        audio_stretched = librosa.effects.time_stretch(audio, rate=0.9)
-        audio_stretched = pad_or_truncate(audio_stretched, sr, len(audio) / sr)
-        augmented.append(audio_stretched)
-        
-        # Pitch shift
-        audio_pitched = librosa.effects.pitch_shift(audio, sr=sr, n_steps=2)
-        augmented.append(audio_pitched)
-        
-        # Add noise
-        noise = np.random.randn(len(audio)) * 0.005
-        audio_noisy = audio + noise
-        audio_noisy = normalize_audio(audio_noisy)
-        augmented.append(audio_noisy)
-        
+        stretched = librosa.effects.time_stretch(audio, rate=0.9)
+        variants.append(pad_or_truncate(stretched, sr, len(audio) / sr))
+
+        stretched2 = librosa.effects.time_stretch(audio, rate=1.1)
+        variants.append(pad_or_truncate(stretched2, sr, len(audio) / sr))
+
+        variants.append(librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=2))
+        variants.append(librosa.effects.pitch_shift(y=audio, sr=sr, n_steps=-2))
+
+        noise = np.random.randn(len(audio)).astype(np.float32) * 0.005
+        variants.append(normalize_audio(audio + noise))
+
+        noise2 = np.random.randn(len(audio)).astype(np.float32) * 0.01
+        variants.append(normalize_audio(audio + noise2))
     except Exception as e:
         logger.warning(f"Audio augmentation failed: {e}. Returning original only.")
         return [audio]
-    
+
+    for sample in variants[: max(0, factor)]:
+        augmented.append(sample)
     return augmented

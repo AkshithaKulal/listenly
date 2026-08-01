@@ -1,11 +1,17 @@
 {
   "model_type": "cnn_lstm",
-  "test_accuracy": 0.4375,
-  "test_loss": 2.1053154468536377,
-  "train_samples": 1152,
-  "val_samples": 144,
-  "test_samples": 144,
-  "epochs_trained": 25,
-  "best_val_accuracy": 0.5347222089767456,
-  "best_val_loss": 2.031780958175659
+  "test_accuracy": 0.9565972089767456,
+  "test_loss": 0.4037267863750458,
+  "train_samples": 4608,
+  "val_samples": 576,
+  "test_samples": 576,
+  "epochs_trained": 80,
+  "best_val_accuracy": 0.9722222089767456,
+  "best_val_loss": 0.3407271206378937,
+  "improvements": {
+    "augmentation": true,
+    "mfcc_deltas": true,
+    "class_weights": true,
+    "feature_normalization": true
+  }
 }

@@ -40,6 +40,13 @@ HOP_LENGTH       = 512
 N_FFT            = 2048
 TOP_DB           = 30      # silence-trim threshold (dB)
 
+# Use MFCC + delta + delta-delta as 3 input channels
+USE_MFCC_DELTAS  = True
+
+# Data augmentation (multiplies training samples)
+USE_AUGMENTATION = True
+AUGMENT_FACTOR   = 3       # extra variants per original (pitch/stretch/noise)
+
 # ─────────────────────────────────────────────
 # Emotion Labels
 # ─────────────────────────────────────────────
@@ -83,16 +90,19 @@ EMOTION_COLORS = {
 # ─────────────────────────────────────────────
 # Training Hyper-parameters
 # ─────────────────────────────────────────────
-BATCH_SIZE        = 32
-EPOCHS            = 50
-LEARNING_RATE     = 0.001
+BATCH_SIZE        = 16
+EPOCHS            = 80
+LEARNING_RATE     = 0.0005
 VALIDATION_SPLIT  = 0.1
 TEST_SPLIT        = 0.1
 RANDOM_STATE      = 42
 
 # Early-stopping / checkpoint
-PATIENCE          = 10     # early-stopping patience (epochs)
+PATIENCE          = 15     # early-stopping patience (epochs)
 MIN_DELTA         = 0.001  # minimum improvement to count as progress
+USE_CLASS_WEIGHTS = True
+NORMALIZE_FEATURES = True
+
 
 # ─────────────────────────────────────────────
 # Model Types

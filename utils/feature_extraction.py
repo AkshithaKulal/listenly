@@ -240,49 +240,43 @@ def compute_statistics(features):
         raise
 
 
-def extract_features_for_cnn(audio, sr, n_mfcc=40, hop_length=512, n_fft=2048):
+def extract_features_for_cnn(audio, sr, n_mfcc=40, hop_length=512, n_fft=2048, use_deltas=True):
     """
     Extract MFCC features suitable for CNN input (2D image-like).
-    
-    Args:
-        audio (np.array): Audio time series
-        sr (int): Sample rate
-        n_mfcc (int): Number of MFCC coefficients
-        hop_length (int): Hop length
-        n_fft (int): FFT window size
-    
-    Returns:
-        np.array: MFCC features (n_mfcc, time, 1) - channel last
+
+    When use_deltas=True, stacks MFCC + delta + delta-delta as channels:
+    shape (n_mfcc, time, 3). Otherwise shape is (n_mfcc, time, 1).
     """
     try:
         mfcc = extract_mfcc(audio, sr, n_mfcc, hop_length, n_fft)
-        # Add channel dimension for CNN
-        mfcc = np.expand_dims(mfcc, axis=-1)
-        return mfcc
+        if use_deltas:
+            delta = librosa.feature.delta(mfcc)
+            delta2 = librosa.feature.delta(mfcc, order=2)
+            features = np.stack([mfcc, delta, delta2], axis=-1).astype(np.float32)
+        else:
+            features = np.expand_dims(mfcc, axis=-1).astype(np.float32)
+        return features
     except Exception as e:
         logger.error(f"Failed to extract CNN features: {e}")
         raise
 
 
-def extract_features_for_lstm(audio, sr, n_mfcc=40, hop_length=512, n_fft=2048):
+def extract_features_for_lstm(audio, sr, n_mfcc=40, hop_length=512, n_fft=2048, use_deltas=True):
     """
     Extract MFCC features suitable for LSTM input (time series).
-    
-    Args:
-        audio (np.array): Audio time series
-        sr (int): Sample rate
-        n_mfcc (int): Number of MFCC coefficients
-        hop_length (int): Hop length
-        n_fft (int): FFT window size
-    
-    Returns:
-        np.array: MFCC features transposed (time, n_mfcc)
+
+    When use_deltas=True, concatenates MFCC + delta + delta-delta along
+    the feature axis: shape (time, n_mfcc * 3).
     """
     try:
         mfcc = extract_mfcc(audio, sr, n_mfcc, hop_length, n_fft)
-        # Transpose for LSTM (time, features)
-        mfcc = mfcc.T
-        return mfcc
+        if use_deltas:
+            delta = librosa.feature.delta(mfcc)
+            delta2 = librosa.feature.delta(mfcc, order=2)
+            features = np.concatenate([mfcc, delta, delta2], axis=0).T.astype(np.float32)
+        else:
+            features = mfcc.T.astype(np.float32)
+        return features
     except Exception as e:
         logger.error(f"Failed to extract LSTM features: {e}")
         raise
