@@ -545,6 +545,8 @@ export default function App() {
 
       <footer className="footer">
         Listenly · Home & Analyze · CNN+LSTM speech emotion recognition
+        <br />
+        Built by Akshitha Kulal
       </footer>
     </div>
   )
