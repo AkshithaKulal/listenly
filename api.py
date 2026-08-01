@@ -29,18 +29,29 @@ app.add_middleware(
 )
 
 predictor: Optional[EmotionPredictor] = None
+_predictor_error: Optional[str] = None
 
 
 def get_predictor() -> EmotionPredictor:
-    global predictor
-    if predictor is None:
-        model_path = os.path.join(config.SAVED_MODELS_DIR, "best_model_cnn_lstm.h5")
-        if not os.path.exists(model_path):
-            model_path = os.path.join(config.SAVED_MODELS_DIR, "final_model_cnn_lstm.h5")
-        if not os.path.exists(model_path):
-            raise HTTPException(status_code=503, detail="Model not found. Train a model first.")
+    global predictor, _predictor_error
+    if predictor is not None:
+        return predictor
+    if _predictor_error:
+        raise HTTPException(status_code=503, detail=_predictor_error)
+
+    model_path = os.path.join(config.SAVED_MODELS_DIR, "best_model_cnn_lstm.h5")
+    if not os.path.exists(model_path):
+        model_path = os.path.join(config.SAVED_MODELS_DIR, "final_model_cnn_lstm.h5")
+    if not os.path.exists(model_path):
+        _predictor_error = "Model not found. Train a model first."
+        raise HTTPException(status_code=503, detail=_predictor_error)
+    try:
         predictor = EmotionPredictor(model_path, model_type="cnn_lstm")
-    return predictor
+        _predictor_error = None
+        return predictor
+    except Exception as e:
+        _predictor_error = f"Model failed to load: {e}"
+        raise HTTPException(status_code=503, detail=_predictor_error)
 
 
 @app.on_event("startup")
@@ -54,12 +65,15 @@ def warmup():
 @app.get("/api/health")
 def health():
     model_ready = False
+    detail = None
     try:
         get_predictor()
         model_ready = True
-    except Exception:
-        model_ready = False
-    return {"status": "ok", "model_ready": model_ready}
+    except HTTPException as e:
+        detail = e.detail
+    except Exception as e:
+        detail = str(e)
+    return {"status": "ok", "model_ready": model_ready, "detail": detail}
 
 
 @app.get("/api/emotions")

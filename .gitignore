@@ -46,6 +46,7 @@ saved_models/*.h5
 saved_models/*.pkl
 saved_models/*.keras
 !saved_models/best_model_cnn_lstm.h5
+!saved_models/best_model_cnn_lstm.weights.h5
 !saved_models/feature_norm_cnn_lstm.npz
 
 # Logs

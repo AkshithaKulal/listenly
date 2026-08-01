@@ -42,13 +42,53 @@ class EmotionPredictor:
         logger.info(f"Predictor initialized with model: {model_path}")
     
     def _load_model(self, model_path):
-        """Load trained Keras model."""
+        """Load trained Keras model with version-mismatch fallback."""
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model not found: {model_path}")
-        
+
         try:
-            model = load_model(model_path)
+            model = load_model(model_path, compile=False)
             logger.info(f"Model loaded from {model_path}")
+            return model
+        except Exception as e:
+            logger.warning(f"Full model deserialize failed: {e}")
+            logger.warning("Falling back to architecture + weights load...")
+
+        weights_path = os.path.join(
+            os.path.dirname(model_path),
+            os.path.basename(model_path).replace(".h5", ".weights.h5"),
+        )
+        if not os.path.exists(weights_path):
+            alt = model_path.replace(".h5", ".weights.h5")
+            weights_path = alt if os.path.exists(alt) else model_path
+
+        try:
+            from models import build_cnn_lstm_model, build_cnn_model, build_lstm_model
+
+            input_shape = None
+            norm_path = os.path.join(config.SAVED_MODELS_DIR, f"feature_norm_{self.model_type}.npz")
+            if os.path.exists(norm_path):
+                stats = np.load(norm_path, allow_pickle=True)
+                if "input_shape" in stats.files:
+                    input_shape = tuple(int(x) for x in stats["input_shape"])
+
+            if input_shape is None:
+                # Sensible default from improved training (40, 130, 3)
+                input_shape = (config.N_MFCC, 130, 3 if getattr(config, "USE_MFCC_DELTAS", True) else 1)
+
+            builders = {
+                "cnn": build_cnn_model,
+                "lstm": build_lstm_model,
+                "cnn_lstm": build_cnn_lstm_model,
+            }
+            builder = builders.get(self.model_type, build_cnn_lstm_model)
+            model = builder(
+                input_shape=input_shape,
+                num_classes=config.NUM_CLASSES,
+                learning_rate=config.LEARNING_RATE,
+            )
+            model.load_weights(weights_path)
+            logger.info(f"Model weights loaded from {weights_path}")
             return model
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
