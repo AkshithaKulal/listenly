@@ -1,18 +1,18 @@
 Model: cnn_lstm
 Test Accuracy: 0.4375
-Test Loss: 1.9615
+Test Loss: 2.1053
 
               precision    recall  f1-score   support
 
-     neutral      0.389     0.700     0.500        10
-        calm      0.609     0.737     0.667        19
-       happy      0.400     0.316     0.353        19
-         sad      0.211     0.211     0.211        19
-       angry      0.429     0.316     0.364        19
-        fear      0.368     0.368     0.368        19
-     disgust      0.333     0.368     0.350        19
+     neutral      0.143     0.100     0.118        10
+        calm      0.469     0.789     0.588        19
+       happy      0.375     0.474     0.419        19
+         sad      0.292     0.368     0.326        19
+       angry      0.538     0.368     0.438        19
+        fear      0.400     0.211     0.276        19
+     disgust      0.421     0.421     0.421        19
     surprise      0.800     0.600     0.686        20
 
     accuracy                          0.438       144
-   macro avg      0.442     0.452     0.437       144
-weighted avg      0.448     0.438     0.435       144
+   macro avg      0.430     0.416     0.409       144
+weighted avg      0.450     0.438     0.429       144
